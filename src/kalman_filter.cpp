@@ -3,8 +3,8 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-/* 
- * Please note that the Eigen library does not initialize 
+/*
+ * Please note that the Eigen library does not initialize
  *   VectorXd or MatrixXd objects with zeros upon creation.
  */
 
@@ -53,34 +53,35 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
    */
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  float x = x_(0);
-  float y = x_(1);
-  float vx = x_(2);
-  float vy = x_(3);
-  float rho = sqrt(x*x+y*y);
-  float theta = atan2(y,x);
-  // normalize the angle theta between pi and -pi
-  while(theta > M_PI)
+  double x = x_(0);
+  double y = x_(1);
+  double vx = x_(2);
+  double vy = x_(3);
+  double rho = sqrt(x*x+y*y);
+  double theta = atan2(y,x);
+  if(rho < 0.00001){
+    rho = 0.00001;
+  }
+  else if (rho < -0.00001)
   {
-    theta -= 2 * M_PI;
+    rho = -0.00001;
   }
-   while(theta < -M_PI)
-  {
-    theta += 2 * M_PI;
-  }
-  if(rho < 0.0001){
-    rho = 0.0001;
-  }
-  else if (rho < -0.0001)
-  {
-    rho = -0.0001;
-  }
-  float ro_dot = (x*vx+y*vy)/rho;
+  double ro_dot = (x*vx+y*vy)/rho;
   VectorXd z_pred = VectorXd(3);
   z_pred << rho, theta, ro_dot;
-  
+
   VectorXd Y = z - z_pred;
-  
+
+    // normalize the angle error between pi and -pi
+  while(Y(1) > M_PI)
+  {
+     Y(1) -= 2 * M_PI;
+  }
+   while(Y(1) < -M_PI)
+  {
+     Y(1) += 2 * M_PI;
+  }
+
   MatrixXd Ht = H_.transpose();
   MatrixXd S = H_ * P_ * Ht + R_;
   MatrixXd Si = S.inverse();
